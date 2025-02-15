@@ -1,5 +1,4 @@
 import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:shopping_list/data/categories.dart';
 import 'package:shopping_list/models/category.dart';
@@ -28,8 +27,10 @@ class _NewItemState extends State<NewItem> {
       setState(() {
         _isSending = true;
       });
-      final url = Uri.https('flutter-prep-72299-default-rtdb.firebaseio.com',
-          'shopping-list.json');
+      final url = Uri.https(
+        'flutter-prep-72299-default-rtdb.firebaseio.com',
+        'shopping-list.json',
+      );
       final response = await http.post(
         url,
         headers: {
@@ -45,9 +46,8 @@ class _NewItemState extends State<NewItem> {
       );
       final Map<String, dynamic> resData = json.decode(response.body);
 
-      if (!context.mounted) {
-        return;
-      }
+      // Guard against using context if the state is no longer mounted.
+      if (!mounted) return;
 
       Navigator.of(context).pop(
         GroceryItem(
@@ -72,6 +72,7 @@ class _NewItemState extends State<NewItem> {
           key: _formKey,
           child: Column(
             children: [
+              // Text field for item name.
               TextFormField(
                 maxLength: 50,
                 decoration: const InputDecoration(
@@ -90,9 +91,11 @@ class _NewItemState extends State<NewItem> {
                   _enteredName = value!;
                 },
               ),
+              // Row containing quantity input and category dropdown.
               Row(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
+                  // Quantity input field.
                   Expanded(
                     child: TextFormField(
                       decoration: const InputDecoration(
@@ -115,35 +118,38 @@ class _NewItemState extends State<NewItem> {
                     ),
                   ),
                   const SizedBox(width: 8),
+                  // Dropdown for selecting a category.
                   Expanded(
                     child: DropdownButtonFormField(
-                        value: _selectedCategory,
-                        items: [
-                          for (final category in categories.entries)
-                            DropdownMenuItem(
-                              value: category.value,
-                              child: Row(
-                                children: [
-                                  Container(
-                                    width: 16,
-                                    height: 16,
-                                    color: category.value.color,
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Text(category.value.title),
-                                ],
-                              ),
+                      value: _selectedCategory,
+                      items: [
+                        for (final category in categories.entries)
+                          DropdownMenuItem(
+                            value: category.value,
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 16,
+                                  height: 16,
+                                  color: category.value.color,
+                                ),
+                                const SizedBox(width: 6),
+                                Text(category.value.title),
+                              ],
                             ),
-                        ],
-                        onChanged: (value) {
-                          setState(() {
-                            _selectedCategory = value!;
-                          });
-                        }),
+                          ),
+                      ],
+                      onChanged: (value) {
+                        setState(() {
+                          _selectedCategory = value!;
+                        });
+                      },
+                    ),
                   )
                 ],
               ),
               const SizedBox(height: 12),
+              // Row with Reset and Add Item buttons.
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
