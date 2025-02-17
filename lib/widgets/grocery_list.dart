@@ -6,7 +6,14 @@ import 'package:shopping_list/models/grocery_item.dart';
 import 'package:shopping_list/widgets/new_item.dart';
 
 class GroceryList extends StatefulWidget {
-  const GroceryList({super.key});
+  final VoidCallback onToggleTheme;
+  final ThemeMode currentTheme;
+
+  const GroceryList({
+    super.key,
+    required this.onToggleTheme,
+    required this.currentTheme,
+  });
 
   @override
   State<GroceryList> createState() => _GroceryListState();
@@ -98,7 +105,7 @@ class _GroceryListState extends State<GroceryList> {
     final response = await http.delete(url);
 
     if (response.statusCode >= 400) {
-      // Optional: Show error message
+      // Optional: Show error message and re-add item.
       setState(() {
         _groceryItems.insert(index, item);
       });
@@ -117,10 +124,10 @@ class _GroceryListState extends State<GroceryList> {
       content = ListView.builder(
         itemCount: _groceryItems.length,
         itemBuilder: (ctx, index) => Dismissible(
+          key: ValueKey(_groceryItems[index].id),
           onDismissed: (direction) {
             _removeItem(_groceryItems[index]);
           },
-          key: ValueKey(_groceryItems[index].id),
           child: ListTile(
             title: Text(_groceryItems[index].name),
             leading: Container(
@@ -128,9 +135,7 @@ class _GroceryListState extends State<GroceryList> {
               height: 24,
               color: _groceryItems[index].category.color,
             ),
-            trailing: Text(
-              _groceryItems[index].quantity.toString(),
-            ),
+            trailing: Text(_groceryItems[index].quantity.toString()),
           ),
         ),
       );
@@ -144,6 +149,15 @@ class _GroceryListState extends State<GroceryList> {
       appBar: AppBar(
         title: const Text('Your Groceries'),
         actions: [
+          // Dark mode toggle icon
+          IconButton(
+            onPressed: widget.onToggleTheme,
+            icon: Icon(
+              widget.currentTheme == ThemeMode.dark
+                  ? Icons.light_mode
+                  : Icons.dark_mode,
+            ),
+          ),
           IconButton(
             onPressed: _addItem,
             icon: const Icon(Icons.add),

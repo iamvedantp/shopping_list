@@ -5,16 +5,43 @@ void main() {
   runApp(const MyApp());
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
 
-  // This widget is the root of your application.
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  // Default theme mode is system.
+  ThemeMode _themeMode = ThemeMode.system;
+
+  // Toggle between dark and light mode.
+  void _toggleTheme() {
+    setState(() {
+      if (_themeMode == ThemeMode.dark) {
+        _themeMode = ThemeMode.light;
+      } else {
+        _themeMode = ThemeMode.dark;
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      debugShowCheckedModeBanner: false,
       title: 'Flutter Groceries',
-      theme: ThemeData.dark().copyWith(
+      debugShowCheckedModeBanner: false,
+      themeMode: _themeMode,
+      // Light theme configuration.
+      theme: ThemeData.light().copyWith(
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color.fromARGB(255, 147, 229, 250),
+          brightness: Brightness.light,
+        ),
+      ),
+      // Dark theme configuration.
+      darkTheme: ThemeData.dark().copyWith(
         colorScheme: ColorScheme.fromSeed(
           seedColor: const Color.fromARGB(255, 147, 229, 250),
           brightness: Brightness.dark,
@@ -22,7 +49,11 @@ class MyApp extends StatelessWidget {
         ),
         scaffoldBackgroundColor: const Color.fromARGB(255, 50, 58, 60),
       ),
-      home: const GroceryList(),
+      // Pass the toggle callback and current theme mode to GroceryList.
+      home: GroceryList(
+        onToggleTheme: _toggleTheme,
+        currentTheme: _themeMode,
+      ),
     );
   }
 }
