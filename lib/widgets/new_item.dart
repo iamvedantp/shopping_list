@@ -6,20 +6,34 @@ import 'package:http/http.dart' as http;
 import 'package:shopping_list/models/grocery_item.dart';
 
 class NewItem extends StatefulWidget {
-  const NewItem({super.key});
+  final GroceryItem? existingItem;
+
+  const NewItem({super.key, this.existingItem});
 
   @override
-  State<NewItem> createState() {
-    return _NewItemState();
-  }
+  State<NewItem> createState() => _NewItemState();
 }
 
 class _NewItemState extends State<NewItem> {
   final _formKey = GlobalKey<FormState>();
-  var _enteredName = '';
-  var _enteredQuantity = 1;
-  var _selectedCategory = categories[Categories.vegetables]!;
+  late String _enteredName;
+  late int _enteredQuantity;
+  late Category _selectedCategory;
   var _isSending = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.existingItem != null) {
+      _enteredName = widget.existingItem!.name;
+      _enteredQuantity = widget.existingItem!.quantity;
+      _selectedCategory = widget.existingItem!.category;
+    } else {
+      _enteredName = '';
+      _enteredQuantity = 1;
+      _selectedCategory = categories[Categories.vegetables]!;
+    }
+  }
 
   void _saveItem() async {
     if (_formKey.currentState!.validate()) {
@@ -27,31 +41,44 @@ class _NewItemState extends State<NewItem> {
       setState(() {
         _isSending = true;
       });
-      final url = Uri.https(
-        'flutter-prep-72299-default-rtdb.firebaseio.com',
-        'shopping-list.json',
-      );
-      final response = await http.post(
-        url,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: json.encode(
-          {
-            'name': _enteredName,
-            'quantity': _enteredQuantity,
-            'category': _selectedCategory.title,
-          },
-        ),
-      );
+
+      final url = widget.existingItem == null
+          ? Uri.https(
+              'flutter-prep-72299-default-rtdb.firebaseio.com',
+              'shopping-list.json',
+            )
+          : Uri.https(
+              'flutter-prep-72299-default-rtdb.firebaseio.com',
+              'shopping-list/${widget.existingItem!.id}.json',
+            );
+
+      final response = widget.existingItem == null
+          ? await http.post(
+              url,
+              headers: {'Content-Type': 'application/json'},
+              body: json.encode({
+                'name': _enteredName,
+                'quantity': _enteredQuantity,
+                'category': _selectedCategory.title,
+              }),
+            )
+          : await http.patch(
+              url,
+              headers: {'Content-Type': 'application/json'},
+              body: json.encode({
+                'name': _enteredName,
+                'quantity': _enteredQuantity,
+                'category': _selectedCategory.title,
+              }),
+            );
+
       final Map<String, dynamic> resData = json.decode(response.body);
 
-      // Guard against using context if the state is no longer mounted.
       if (!mounted) return;
 
       Navigator.of(context).pop(
         GroceryItem(
-          id: resData['name'],
+          id: widget.existingItem?.id ?? resData['name'],
           name: _enteredName,
           quantity: _enteredQuantity,
           category: _selectedCategory,
@@ -64,7 +91,8 @@ class _NewItemState extends State<NewItem> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Add a new item'),
+        title:
+            Text(widget.existingItem == null ? 'Add a new item' : 'Edit item'),
       ),
       body: Padding(
         padding: const EdgeInsets.all(12),
@@ -72,53 +100,43 @@ class _NewItemState extends State<NewItem> {
           key: _formKey,
           child: Column(
             children: [
-              // Text field for item name.
+              // Name input field.
               TextFormField(
                 maxLength: 50,
-                decoration: const InputDecoration(
-                  label: Text('Name'),
-                ),
+                decoration: const InputDecoration(label: Text('Name')),
+                initialValue: _enteredName,
                 validator: (value) {
                   if (value == null ||
-                      value.isEmpty ||
-                      value.trim().length <= 1 ||
-                      value.trim().length > 50) {
+                      value.trim().isEmpty ||
+                      value.length > 50) {
                     return 'Must be between 1 and 50 characters.';
                   }
                   return null;
                 },
-                onSaved: (value) {
-                  _enteredName = value!;
-                },
+                onSaved: (value) => _enteredName = value!,
               ),
-              // Row containing quantity input and category dropdown.
+              // Row with quantity and category selection.
               Row(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  // Quantity input field.
                   Expanded(
                     child: TextFormField(
-                      decoration: const InputDecoration(
-                        label: Text('Quantity'),
-                      ),
+                      decoration:
+                          const InputDecoration(label: Text('Quantity')),
                       keyboardType: TextInputType.number,
                       initialValue: _enteredQuantity.toString(),
                       validator: (value) {
                         if (value == null ||
-                            value.isEmpty ||
                             int.tryParse(value) == null ||
-                            int.tryParse(value)! <= 0) {
+                            int.parse(value) <= 0) {
                           return 'Must be a valid positive number.';
                         }
                         return null;
                       },
-                      onSaved: (value) {
-                        _enteredQuantity = int.parse(value!);
-                      },
+                      onSaved: (value) => _enteredQuantity = int.parse(value!),
                     ),
                   ),
                   const SizedBox(width: 8),
-                  // Dropdown for selecting a category.
                   Expanded(
                     child: DropdownButtonFormField(
                       value: _selectedCategory,
@@ -139,26 +157,21 @@ class _NewItemState extends State<NewItem> {
                             ),
                           ),
                       ],
-                      onChanged: (value) {
-                        setState(() {
-                          _selectedCategory = value!;
-                        });
-                      },
+                      onChanged: (value) =>
+                          setState(() => _selectedCategory = value!),
                     ),
-                  )
+                  ),
                 ],
               ),
               const SizedBox(height: 12),
-              // Row with Reset and Add Item buttons.
+              // Reset and Add/Update button row.
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   TextButton(
                     onPressed: _isSending
                         ? null
-                        : () {
-                            _formKey.currentState!.reset();
-                          },
+                        : () => _formKey.currentState!.reset(),
                     child: const Text('Reset'),
                   ),
                   ElevatedButton(
@@ -169,10 +182,12 @@ class _NewItemState extends State<NewItem> {
                             width: 16,
                             child: CircularProgressIndicator(),
                           )
-                        : const Text('Add Item'),
+                        : Text(widget.existingItem == null
+                            ? 'Add Item'
+                            : 'Update Item'),
                   ),
                 ],
-              )
+              ),
             ],
           ),
         ),
