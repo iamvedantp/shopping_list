@@ -32,7 +32,9 @@ class _GroceryListState extends State<GroceryList> {
 
   void _loadItems() async {
     final url = Uri.https(
-        'flutter-prep-72299-default-rtdb.firebaseio.com', 'shopping-list.json');
+      'flutter-prep-72299-default-rtdb.firebaseio.com',
+      'shopping-list.json',
+    );
 
     try {
       final response = await http.get(url);
@@ -55,7 +57,8 @@ class _GroceryListState extends State<GroceryList> {
       for (final item in listData.entries) {
         final category = categories.entries
             .firstWhere(
-                (catItem) => catItem.value.title == item.value['category'])
+              (catItem) => catItem.value.title == item.value['category'],
+            )
             .value;
         loadedItems.add(
           GroceryItem(
@@ -93,19 +96,38 @@ class _GroceryListState extends State<GroceryList> {
     });
   }
 
+  void _updateItem(GroceryItem item) async {
+    final updatedItem = await Navigator.of(context).push<GroceryItem>(
+      MaterialPageRoute(
+        builder: (ctx) => NewItem(existingItem: item),
+      ),
+    );
+
+    if (updatedItem == null) return;
+
+    setState(() {
+      final index = _groceryItems.indexWhere((i) => i.id == item.id);
+      if (index != -1) {
+        _groceryItems[index] = updatedItem;
+      }
+    });
+  }
+
   void _removeItem(GroceryItem item) async {
     final index = _groceryItems.indexOf(item);
     setState(() {
       _groceryItems.remove(item);
     });
 
-    final url = Uri.https('flutter-prep-default-rtdb.firebaseio.com',
-        'shopping-list/${item.id}.json');
+    final url = Uri.https(
+      'flutter-prep-72299-default-rtdb.firebaseio.com',
+      'shopping-list/${item.id}.json',
+    );
 
     final response = await http.delete(url);
 
     if (response.statusCode >= 400) {
-      // Optional: Show error message and re-add item.
+      // Optional: Show error message and re-add item if delete fails.
       setState(() {
         _groceryItems.insert(index, item);
       });
@@ -123,11 +145,7 @@ class _GroceryListState extends State<GroceryList> {
     if (_groceryItems.isNotEmpty) {
       content = ListView.builder(
         itemCount: _groceryItems.length,
-        itemBuilder: (ctx, index) => Dismissible(
-          key: ValueKey(_groceryItems[index].id),
-          onDismissed: (direction) {
-            _removeItem(_groceryItems[index]);
-          },
+        itemBuilder: (ctx, index) => Card(
           child: ListTile(
             title: Text(_groceryItems[index].name),
             leading: Container(
@@ -135,7 +153,21 @@ class _GroceryListState extends State<GroceryList> {
               height: 24,
               color: _groceryItems[index].category.color,
             ),
-            trailing: Text(_groceryItems[index].quantity.toString()),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Edit button
+                IconButton(
+                  icon: const Icon(Icons.edit),
+                  onPressed: () => _updateItem(_groceryItems[index]),
+                ),
+                // Delete button
+                IconButton(
+                  icon: const Icon(Icons.delete),
+                  onPressed: () => _removeItem(_groceryItems[index]),
+                ),
+              ],
+            ),
           ),
         ),
       );
@@ -149,7 +181,6 @@ class _GroceryListState extends State<GroceryList> {
       appBar: AppBar(
         title: const Text('Your Groceries'),
         actions: [
-          // Dark mode toggle icon
           IconButton(
             onPressed: widget.onToggleTheme,
             icon: Icon(
