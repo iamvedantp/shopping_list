@@ -21,7 +21,7 @@ A simple Flutter app to manage your shopping list. This project demonstrates a c
 
 ## Screenshots
 
-![Shopping_list](shopping_list.jpg)
+![shopping_list_app](shopping_list_app.jpg)
 
 ## Getting Started
 
@@ -55,6 +55,7 @@ A simple Flutter app to manage your shopping list. This project demonstrates a c
 #### Project Structure
 
 lib/
+
 ├── main.dart # App entry point; handles theme switching.
 ├── widgets/
 │ ├── grocery_list.dart # Main screen for displaying grocery items.
