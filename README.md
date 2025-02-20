@@ -55,15 +55,25 @@ A simple Flutter app to manage your shopping list. This project demonstrates a c
 #### Project Structure
 
 lib/
+
 ├── main.dart # App entry point; handles theme switching.
+
 ├── widgets/
+
 │ ├── grocery_list.dart # Main screen for displaying grocery items.
+
 │ └── new_item.dart # Screen for adding a new grocery item.
+
 ├── models/
+
 │ ├── category.dart # Defines the Category model.
+
 │ └── grocery_item.dart # Defines the GroceryItem model.
+
 └── data/
+
 ├── categories.dart # Contains available categories.
+
 └── dummy_items.dart # Dummy data for testing.
 
 ## Future Improvements
